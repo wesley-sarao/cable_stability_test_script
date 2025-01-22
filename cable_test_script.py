@@ -12,7 +12,7 @@ import time
 from numpy import double
 import os
 from datetime import datetime
-#import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 # import h5py
 # import json
 # import scipy
@@ -30,20 +30,23 @@ vna_termination = "\n"
 
 # %% Metadata for the test
 metadata = {
-    "measurement_title" : "First measurement test",
-    "cable_under_test_manufacturer": "Huber and Suhner",
-    "cable_under_test_model_number": "Sucoflex 104",
+    "measurement_title" : "stability test 3",
+    "cable_under_test_manufacturer": "Withwave",
+    "cable_under_test_model_number": "W102-NM1SM1-2M",
     "cable_under_test_serial_number": "N/A",
     "cable_under_test_length": "2m",
     "cable_under_test_connector_a": "SMA-m",
     "cable_under_test_connector_b": "N-Type-m",
     "cable_under_test_vna_ports": "Port 1 and Port 2",
-    "reference_measurement_description": "Through calibration standard connected between port 3 and port 4",
-    "cable_under_test_additional_adaptor_a": "SMA f-f",  # external to the calibration
-    "cable_under_test_additional_adaptor_b": "SMA f - N-Type f",
+    "reference_measurement_description": "Withwave W102-NM1SM1-2M connected between port 3 and port 4 outside the chamber",
+    "cable_under_test_additional_adaptor_port_1": "SMA f-f",  # external to the calibration
+    "cable_under_test_additional_adaptor_port_2": "SMA f - N-Type f",
     "test_location": "Liesbeek house Receiver Lab",
-    "calibration_description": '''Channel 1: Two port calibration port 1, port 2.
-                                 Channel 2: Two port calibration port 3, port 4'''}
+    "temperature profile" : "25 C to +50 C at 2 degrees per 10 mins (0.20). Soak for 20 min at 50 C, ramp from 50 C to -10 C at 2 degrees in 10 mins (0.20). Soak at -10 for 20 min. Ramp back to 50C at 0.20, soak for 20 mins at 50 C and ramp back down to 25 C at 0.2",
+    "calibration_description": '''Channel 1: Two port calibration port 1, port 2 and two port calibration port 3, port 4''',
+    "frequency reference": "External - GPS disciplined rubudium clock"
+    }
+
 
 
 initial_file_name = 'measurements//'+metadata["cable_under_test_manufacturer"]+ ' ' + metadata["cable_under_test_model_number"] + ' ' + metadata["measurement_title"]
@@ -54,26 +57,12 @@ measurement_list = ['S11_mag(dB)',
                     'S21_mag(dB)',
                     'S12_mag(dB)',
                     'S22_mag(dB)',
-                    'S11_phase',
                     'S21_phase',
-                    'S12_phase',
-                    'S22_phase',
                     'S33_mag(dB)',
                     'S43_mag(dB)',
                     'S34_mag(dB)',
                     'S44_mag(dB)',
-                    'S33_phase',
-                    'S43_phase',
-                    'S34_phase',
-                    'S44_phase']
-
-# %% Environmental chamber temperature set points
-# -----------------------------------------------------------------------------
-temp_ambient = "25"  # deg C
-temp_high = "55"  # deg C - 45 to 50 C
-temp_low = "-5"  # deg C
-dwell_time_high = 30 * 60  # (30 * 60 seconds) = 30 minutes
-dwell_time_low = 30 * 60  # (30 * 60 seconds) = 30 minutes
+                    'S43_phase']
 
 
 # %%
@@ -123,7 +112,7 @@ def initialise_log_file(file_name):
         log_file.write('Start date and time:' +
                        (datetime.now().strftime("%d/%m/%Y %H:%M:%S")))
         for key in metadata:
-            log_file.write(key+':'+metadata[key])
+            log_file.write(key+':'+metadata[key]+'\n')
         log_file.write('%s \t %s \n' % (
             datetime.now().strftime("%d/%m/%Y %H:%M:%S"), 'Logging started'))
     return new_file_name
@@ -173,11 +162,11 @@ def initialise_vna():
     vna.write('SOUR:POW -20')  # Set an appropriate power level for this cable
 
     # Channel 2 setup
-    vna.write('CONF:CHAN2:STAT ON')  # Create Ch2 and enable
-    vna.write('SWEep:TYPE LIN')  # Set up frequency sweep
-    vna.write('SENSE1:SWEEP:POINTS %s' % f_points)
-    vna.write('FREQ:START %s' % f_start)
-    vna.write('FREQ:STOP %s' % f_stop)
+    # vna.write('CONF:CHAN2:STAT ON')  # Create Ch2 and enable
+    # vna.write('SWEep:TYPE LIN')  # Set up frequency sweep
+    # vna.write('SENSE1:SWEEP:POINTS %s' % f_points)
+    # vna.write('FREQ:START %s' % f_start)
+    # vna.write('FREQ:STOP %s' % f_stop)
     # set an appropriate power level for this cable
     vna.write('SOUR:POW -20')
 
@@ -187,6 +176,7 @@ def initialise_vna():
     vna.write('DISP:WIND2:STAT ON')
     vna.write('DISP:WIND3:STAT ON')
     vna.write('DISP:WIND4:STAT ON')
+
 
     # Set up traces for Channel 1 window 1 (magnitudes)
     vna.write('CALC1:PAR:SDEF "Ch1_Trc1", "S11" ')
@@ -201,45 +191,30 @@ def initialise_vna():
     vna.write('CALC1:PAR:SDEF "Ch1_Trc4", "S22" ')
     vna.write('DISP:WIND1:TRAC4:FEED "Ch1_Trc4"')
     vna.write('CALC1:FORM MLOG')
-    # Set up traces for Channel 1 window 2 (phases)
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc5", "S11" ')
-    vna.write('DISP:WIND2:TRAC1:FEED "Ch1_Trc5"')
-    vna.write('CALC1:FORM PHASE')
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc6", "S21" ')
-    vna.write('DISP:WIND2:TRAC2:FEED "Ch1_Trc6"')
-    vna.write('CALC1:FORM PHASE')
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc7", "S12" ')
-    vna.write('DISP:WIND2:TRAC3:FEED "Ch1_Trc7"')
-    vna.write('CALC1:FORM PHASE')
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc8", "S22" ')
-    vna.write('DISP:WIND2:TRAC4:FEED "Ch1_Trc8"')
-    vna.write('CALC1:FORM PHASE')
-    # Set up traces for Chanel 2 window 3 (magnitudes)
-    vna.write('CALC2:PAR:SDEF "Ch2_Trc1", "S33" ')
-    vna.write('DISP:WIND3:TRAC1:FEED "Ch2_Trc1"')
-    vna.write('CALC2:FORM MLOG')
-    vna.write('CALC2:PAR:SDEF "Ch2_Trc2", "S43" ')
-    vna.write('DISP:WIND3:TRAC2:FEED "Ch2_Trc2"')
-    vna.write('CALC2:FORM MLOG')
-    vna.write('CALC2:PAR:SDEF "Ch2_Trc3", "S34" ')
-    vna.write('DISP:WIND3:TRAC3:FEED "Ch2_Trc3"')
-    vna.write('CALC2:FORM MLOG')
-    vna.write('CALC2:PAR:SDEF "Ch2_Trc4", "S44" ')
-    vna.write('DISP:WIND3:TRAC4:FEED "Ch2_Trc4"')
-    vna.write('CALC2:FORM MLOG')
-    # set up traces for channel 2 window 4 (phases)
-    vna.write('CALC2:PAR:SDEF "Ch2_Trc5", "S33" ')
-    vna.write('DISP:WIND4:TRAC1:FEED "Ch2_Trc5"')
-    vna.write('CALC2:FORM PHASE')
-    vna.write('CALC2:PAR:SDEF "Ch2_Trc6", "S43" ')
-    vna.write('DISP:WIND4:TRAC2:FEED "Ch2_Trc6"')
-    vna.write('CALC2:FORM PHASE')
-    vna.write('CALC2:PAR:SDEF "Ch2_Trc7", "S34" ')
-    vna.write('DISP:WIND4:TRAC3:FEED "Ch2_Trc7"')
-    vna.write('CALC2:FORM PHASE')
-    vna.write('CALC2:PAR:SDEF "Ch2_Trc8", "S44" ')
-    vna.write('DISP:WIND4:TRAC4:FEED "Ch2_Trc8"')
-    vna.write('CALC2:FORM PHASE')
+
+
+    vna.write('CALC1:PAR:SDEF "Ch1_Trc5", "S21" ')
+    vna.write('DISP:WIND3:TRAC1:FEED "Ch1_Trc5"')
+    vna.write('CALC1:FORM UPHASE')
+
+
+    vna.write('CALC1:PAR:SDEF "Ch1_Trc6", "S33" ')
+    vna.write('DISP:WIND2:TRAC1:FEED "Ch1_Trc6"')
+    vna.write('CALC1:FORM MLOG')
+    vna.write('CALC1:PAR:SDEF "Ch1_Trc7", "S43" ')
+    vna.write('DISP:WIND2:TRAC2:FEED "Ch1_Trc7"')
+    vna.write('CALC1:FORM MLOG')
+    vna.write('CALC1:PAR:SDEF "Ch1_Trc8", "S34" ')
+    vna.write('DISP:WIND2:TRAC3:FEED "Ch1_Trc8"')
+    vna.write('CALC1:FORM MLOG')
+    vna.write('CALC1:PAR:SDEF "Ch1_Trc9", "S44" ')
+    vna.write('DISP:WIND2:TRAC4:FEED "Ch1_Trc9"')
+    vna.write('CALC1:FORM MLOG')
+
+
+    vna.write('CALC1:PAR:SDEF "Ch1_Trc10", "S43" ')
+    vna.write('DISP:WIND4:TRAC1:FEED "Ch1_Trc10"')
+    vna.write('CALC1:FORM UPHASE')
     return
 # %%
 
@@ -249,8 +224,9 @@ def cal_check():
     # Confirm that the system is calibrated
     vna.write('SYSTEM:DISPLAY:UPDATE:ON')
 
-    write_to_log_file(working_log_file, ('Channel 1:'+vna.query('SENSe1:CORRection:SSTate?')))
-    write_to_log_file(working_log_file, ('Channel 2:'+vna.query('SENSe2:CORRection:SSTate?')))
+    write_to_log_file(working_log_file, ('Calibration channel 1:'+vna.query('SENSe1:CORRection:SSTate?')))
+    write_to_log_file(working_log_file, ('Calibration date channel 1:'+vna.query('SENSe1:CORRection:DATE?')))
+    # write_to_log_file(working_log_file, ('Channel 2:'+vna.query('SENSe2:CORRection:SSTate?')))
     # TODO Can we save the calibration for later?
     return
 
@@ -259,12 +235,12 @@ def cal_check():
 def capture_vna_data():
 
     vna.write('INIT1:CONT OFF')  # Switch to single sweep on channel 1
-    vna.write('INIT2:CONT OFF')  # switch to single sweep on channel 2
+    # vna.write('INIT2:CONT OFF')  # switch to single sweep on channel 2
     # Carry out the sweep
     # initiate the sweep in channel 1 and wait for confirmation
     vna.write('INIT1:IMM;*WAI')
     # initiate the sweep in channel 1 and wait for confirmation
-    vna.write('INIT2:IMM;*WAI')
+    # vna.write('INIT2:IMM;*WAI')
 
     # Fetch the data
     VNA_measurement = {}
@@ -274,34 +250,22 @@ def capture_vna_data():
     trace_1 = np.fromstring(trace_array_1, sep=",")
 
 
-    # Query all traces from Channel 2
-    trace_array_2 = vna.query('CALC2:DATA:ALL? FDAT')
-    # Convert to a numpy array
-    trace_2 = np.fromstring(trace_array_2, sep=",")
 
 
     # Define the number of traces (adjust this if needed)
-    num_traces = 16  # Update according to your VNA setup
+    num_traces = len(measurement_list) # Update according to your VNA setup
     num_points = len(trace_1) // num_traces  # Points per trace
 
     # Reshape into 2D array: (num_traces, num_points)
     trace_1 = trace_1.reshape((num_traces, num_points))
-    trace_2 = trace_2.reshape((num_traces, num_points))
-    
+
     # It seems like the data is identical whether captured from channel 1 or 2.
     # It is good to seperate them out
-    # Channel 1 contains port 1 and port 2 and has a two port calibration
-    # Channel 2 contains port 3 and port 4 and has a two port calibration
 
     # Copy the data from the measurement list to the VNA_measurement dict
 
     for value in measurement_list:
-        if measurement_list.index(value) <= 7:
-            #  channel 1 is used for Port 1 and Port 2
             VNA_measurement[value] = trace_1[measurement_list.index(value), :]
-        if measurement_list.index(value) > 7:
-            # channel 2 is used for Port 3 and Port 4
-            VNA_measurement[value] = trace_2[measurement_list.index(value), :]
 
     return VNA_measurement
 
@@ -356,6 +320,8 @@ def get_time_remaining():
 
 #%% Main loop
 
+working_log_file = initialise_log_file(initial_file_name)
+
 try:
 
     # -----------------------------------------------------------------------------
@@ -379,7 +345,7 @@ try:
                            read_termination=vna_termination)
 
     print(vna.query("*IDN?"))
-    working_log_file = initialise_log_file(initial_file_name)
+    
     cal_check()
     # Query the frequency data for channel 1
     freq_array = vna.query('CALC1:DATA:STIM?')
@@ -398,7 +364,7 @@ try:
     # selec the program
     tc.write('Programme en cours = "cable_stability"')
     # confirm that the correct program is selected
-    print(tc.query("?Programme en cours"))
+    # print(tc.query("?Programme en cours"))
     write_to_log_file(working_log_file,
                       'Programme selected on environmental chamber:'+ tc.query("?Programme en cours"))
     
@@ -411,7 +377,7 @@ try:
     # if (tc.query('?marche_arret') == ('marche_arret=0')):
     #     print('Environmental chamber turned off')
     environmental_tests_start_time = time.time()
-    stop_time = environmental_tests_start_time + 45054
+    stop_time = environmental_tests_start_time + (15.5*60*60)
     # time_left = get_time_remaining()
     # if time_left == '':
     #     print('error receiving time left')
@@ -443,7 +409,10 @@ try:
         
         # TODO - report the measurement progress
         print('Measurement %s' % i)
-        time.sleep(60) # 1 minute between tests will result in 7509 samples 
+        write_to_log_file(working_log_file,
+                      'Measurement %s' % i)
+        write_to_log_file(working_log_file,chamber_temp)
+        time.sleep(10) # 1 minute between tests will result in 7509 samples 
         i+=1
     # close the socket connections
     write_to_log_file(working_log_file,
@@ -458,9 +427,8 @@ except KeyboardInterrupt:
     vna.close()
     tc.close()
 except:
-#    write_to_log_file(working_log_file,
-#                      'cancelled by another exception')
-    print('Stopped by another exception')
+    write_to_log_file(working_log_file,
+                      'cancelled by another exception')
     vna.close()
     tc.close()
 
