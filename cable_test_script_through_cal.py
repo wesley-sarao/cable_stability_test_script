@@ -53,22 +53,16 @@ initial_file_name = 'measurements//'+metadata["cable_under_test_manufacturer"]+ 
 
 
 # %%
-measurement_list = ['S11_mag(dB)',
-                    'S21_mag(dB)',
-                    'S12_mag(dB)',
-                    'S22_mag(dB)',
+measurement_list = ['S21_mag(dB)',
                     'S21_phase',
-                    'S33_mag(dB)',
                     'S43_mag(dB)',
-                    'S34_mag(dB)',
-                    'S44_mag(dB)',
                     'S43_phase']
 
 
 # %%
-f_points = 201  # number of points in the frequency sweep
-f_start = '0.1 GHZ'
-f_stop = '20.1 GHZ'
+f_points = 2001  # number of points in the frequency sweep
+f_start = '14.9 GHZ'
+f_stop = '15.1 GHZ'
 # this will give allow the points to align with GHz designations
 
 # %% Functions
@@ -159,62 +153,39 @@ def initialise_vna():
     vna.write('SENSE1:SWEEP:POINTS %s' % f_points)
     vna.write('FREQ:START %s' % f_start)
     vna.write('FREQ:STOP %s' % f_stop)
-    vna.write('SOUR:POW -20')  # Set an appropriate power level for this cable
+    vna.write('SOUR:POW -10')  # Set an appropriate power level for this cable
 
     # Channel 2 setup
-    # vna.write('CONF:CHAN2:STAT ON')  # Create Ch2 and enable
-    # vna.write('SWEep:TYPE LIN')  # Set up frequency sweep
-    # vna.write('SENSE1:SWEEP:POINTS %s' % f_points)
-    # vna.write('FREQ:START %s' % f_start)
-    # vna.write('FREQ:STOP %s' % f_stop)
+    vna.write('CONF:CHAN2:STAT ON')  # Create Ch2 and enable
+    vna.write('SWEep:TYPE LIN')  # Set up frequency sweep
+    vna.write('SENSE1:SWEEP:POINTS %s' % f_points)
+    vna.write('FREQ:START %s' % f_start)
+    vna.write('FREQ:STOP %s' % f_stop)
     # set an appropriate power level for this cable
-    vna.write('SOUR:POW -20')
+    vna.write('SOUR:POW -10')
 
     # create four windows
     vna.write('CALCulate:PARameter:DELete:ALL')
     vna.write('DISP:WIND1:STAT ON')
     vna.write('DISP:WIND2:STAT ON')
-    vna.write('DISP:WIND3:STAT ON')
-    vna.write('DISP:WIND4:STAT ON')
+    # vna.write('DISP:WIND3:STAT ON')
+    # vna.write('DISP:WIND4:STAT ON')
 
 
     # Set up traces for Channel 1 window 1 (magnitudes)
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc1", "S11" ')
+    vna.write('CALC1:PAR:SDEF "Ch1_Trc1", "S21" ')
     vna.write('DISP:WIND1:TRAC1:FEED "Ch1_Trc1"')
     vna.write('CALC1:FORM MLOG')
     vna.write('CALC1:PAR:SDEF "Ch1_Trc2", "S21" ')
     vna.write('DISP:WIND1:TRAC2:FEED "Ch1_Trc2"')
-    vna.write('CALC1:FORM MLOG')
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc3", "S12" ')
-    vna.write('DISP:WIND1:TRAC3:FEED "Ch1_Trc3"')
-    vna.write('CALC1:FORM MLOG')
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc4", "S22" ')
-    vna.write('DISP:WIND1:TRAC4:FEED "Ch1_Trc4"')
-    vna.write('CALC1:FORM MLOG')
-
-
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc5", "S21" ')
-    vna.write('DISP:WIND3:TRAC1:FEED "Ch1_Trc5"')
     vna.write('CALC1:FORM UPHASE')
 
-
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc6", "S33" ')
-    vna.write('DISP:WIND2:TRAC1:FEED "Ch1_Trc6"')
-    vna.write('CALC1:FORM MLOG')
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc7", "S43" ')
-    vna.write('DISP:WIND2:TRAC2:FEED "Ch1_Trc7"')
-    vna.write('CALC1:FORM MLOG')
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc8", "S34" ')
-    vna.write('DISP:WIND2:TRAC3:FEED "Ch1_Trc8"')
-    vna.write('CALC1:FORM MLOG')
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc9", "S44" ')
-    vna.write('DISP:WIND2:TRAC4:FEED "Ch1_Trc9"')
-    vna.write('CALC1:FORM MLOG')
-
-
-    vna.write('CALC1:PAR:SDEF "Ch1_Trc10", "S43" ')
-    vna.write('DISP:WIND4:TRAC1:FEED "Ch1_Trc10"')
-    vna.write('CALC1:FORM UPHASE')
+    vna.write('CALC2:PAR:SDEF "Ch2_Trc1", "S43" ')
+    vna.write('DISP:WIND2:TRAC1:FEED "Ch2_Trc1"')
+    vna.write('CALC2:FORM MLOG')
+    vna.write('CALC2:PAR:SDEF "Ch2_Trc2", "S43" ')
+    vna.write('DISP:WIND2:TRAC2:FEED "Ch2_Trc2"')
+    vna.write('CALC2:FORM UPHASE')
     return
 # %%
 
@@ -229,6 +200,13 @@ def cal_check():
     # write_to_log_file(working_log_file, ('Channel 2:'+vna.query('SENSe2:CORRection:SSTate?')))
     # TODO Can we save the calibration for later?
     return
+
+#%%
+
+def through_cal():
+    
+    
+
 
 # %% Initiate the sweep and save the data
 

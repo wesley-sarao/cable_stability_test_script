@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 
 
-initial_file_name = 'measurements//Withwave W102-NM1SM1-2M stability test 2'
+initial_file_name = 'measurements//Withwave W102-NM1SM1-2M stability test 3'
 
 S11_mag = np.load(initial_file_name +' %s.npy' % 'S11_mag(dB)')
 S21_mag = np.load(initial_file_name +' %s.npy' % 'S21_mag(dB)')
@@ -228,84 +228,75 @@ fig.set_size_inches(8, 6, forward=True)
 plt.figure(5)
 plt.clf()
 
-# for i in range (100,200):
+# Parameters and indices
+index = 81  # Index of interest for the phase data
+trim_s = 2700
+trim_f = 3300
+n_points = len(S21_ph[1:, 0])  # Number of data points
+phase_stability = np.zeros(n_points + 1)  # Initialize phase stability array
+phase_stability_ppm = np.zeros(n_points + 1)  # Initialize phase stability in ppm
 
-#     plt.plot(S21_ph[1:, 0],
-#              S21_ph[1:,100]-S21_ph[1:, i],
-#              linewidth=1)
-
-#              # label='S21_phase @ 15.4 GHz')
-
-# delta_phase =np.diff(S21_ph[1:, 121])
-# delta_temp = np.diff(S21_ph[1:,1])
-# phase_stability = delta_phase / delta_temp[:, np.newaxis]
-# stability_ppm = (phase_stability / 360) * 1e6  # Convert to ppm
-
-index = 153
-phase_stability = np.zeros(((len(S21_ph[1:,0])+1)))
-phase_stability_ppm = np.zeros(((len(S21_ph[1:,0]))+1))
-
-for i in range(1,len(S21_ph[1:,0])):
-    delta_phase = S21_ph[1, index]-S21_ph[i, index]  # Normalise to initial value
-    delta_temp = S21_ph[1, 1] - S21_ph[i, 1]  # Normalised to initial temperature
-    # print(i)
+# Calculate phase stability and convert to ppm
+for i in range(1, n_points):
+    delta_phase = S21_ph[1, index] - S21_ph[i, index]  # Normalized phase difference
+    delta_temp = S21_ph[1, 1] - S21_ph[i, 1]  # Normalized temperature difference
     phase_stability[i] = delta_phase / delta_temp
-    phase_stability_ppm[i] =  (phase_stability[i-1] / 360) * 1e6  # Convert to ppm
+    phase_stability_ppm[i] = (phase_stability[i - 1] / 360) * 1e6  # Convert to ppm
 
-# plt.plot(S21_ph[5:, 0],
-#          phase_stability_ppm[5:],
-#          linewidth=1,
-#          label='DUT phase stability ppm')
+# Create the primary axis
+fig, ax1 = plt.subplots()
 
-# # #              # label='S21_phase @ 15.4 GHz')
-# plt.plot(S21_ph[1:, 0],
-#          S21_ph[1:, index],
-#          linewidth=1,
-#          label='DUT')
-
-plt.plot(S21_ph[1:, 0],
-         (S21_ph[1, index]-S21_ph[1:, index])-(S43_ph[1, index]-S43_ph[1:, index]),
+# Plot DUT corrected phase stability
+ax1.plot(S21_ph[1:, 0],
+         (S21_ph[1, index] - S21_ph[1:, index]) - (S43_ph[1, index] - S43_ph[1:, index]),
          linewidth=1,
          label='DUT corrected')
 
-plt.plot(S21_ph[1:, 0],
-         (S21_ph[1, index]-S21_ph[1:, index]),
+ax1.plot((S21_ph[trim_s, 0],S21_ph[trim_f, 0]),(10,10))
+
+# # Plot DUT uncorrected phase stability
+# ax1.plot(S21_ph[1:, 0],
+#          (S21_ph[1, index] - S21_ph[1:, index]),
+#          linewidth=1,
+#          label='DUT uncorrected')
+
+# Plot reference phase stability
+ax1.plot(S43_ph[1:, 0],
+         S43_ph[1, index] - S43_ph[1:, index],
          linewidth=1,
-         label='DUT uncorrected')
+         label='Reference')
 
-plt.plot(S43_ph[1:, 0],
-         S43_ph[1, index]-S43_ph[1:, index],
+# Configure primary axis appearance
+ax1.set_xlabel("Time")
+ax1.set_ylabel("Phase (degrees)")
+ax1.grid(which='both', color='black', linestyle='-', linewidth=0.5)
+ax1.legend(loc='upper right')
+ax1.set_title("Phase Stability and Temperature Variations")
+
+# Create a secondary y-axis for temperature
+ax2 = ax1.twinx()
+ax2.plot(S21_ph[1:, 0],
+         S21_ph[1:, 1],
+         color='red',
          linewidth=1,
-         label='reference')
+         label='Temperature')
+ax2.set_ylabel("Temperature (°C)", color='red')
+ax2.tick_params(axis='y', labelcolor='red')
 
-
-plt.plot(S21_ph[1:, 0],
-         (S21_ph[1:, 1]),
-         linewidth=1,
-         label='temperature')
-
-
-
-plt.legend(loc='upper right')
-plt.title("Title")
-plt.xlabel("Time")
-plt.ylabel("Phase")
-plt.grid(which='both',
-         color='black',
-         linestyle='-',
-         linewidth=0.5)
-# plt.ylim((-25,+25))
-#plt.xlim((f_start, f_stop))
-fig = plt.gcf()
+# Adjust figure size
 fig.set_size_inches(8, 6, forward=True)
-    # fig.savefig(working_file_name + ' powers.png', dpi=200)
+
+# Optional: Save the figure
+# fig.savefig('phase_stability_with_temperature.png', dpi=200)
+
+plt.show()
     
     
 plt.figure(6)
 plt.clf()
 
 
-index = 153
+# index = 153
 
 # #              # label='S21_phase @ 15.4 GHz')
 plt.plot(S21_mag[1:, 0],
@@ -341,7 +332,7 @@ plt.figure(7)
 plt.clf()
 
 
-index = 153
+# index = 153
 phase_stability = np.zeros(((len(S21_ph[1:,0])+1)))
 phase_stability_ppm = np.zeros(((len(S21_ph[1:,0]))+1))
 phase_change_ppm = np.zeros(((len(S21_ph[1:,0]))+1))
@@ -365,15 +356,24 @@ for i in range(1,len(S21_ph[1:,0])):
 #          linewidth=1,
 #          label='DUT')
 
-plt.plot(S21_ph[1:, 1],
-         (S21_ph[1, index]-S21_ph[1:, index])-(S43_ph[1, index]-S43_ph[1:, index]),
+# plt.plot(S21_ph[1:, 1],
+#          (S21_ph[1, index]-S21_ph[1:, index])-(S43_ph[1, index]-S43_ph[1:, index]),
+#          linewidth=1,
+#          # label='DUT corrected')
+
+plt.plot(S21_ph[1:trim_s, 1],
+         (S21_ph[1, index]-S21_ph[1:trim_s, index])-(S43_ph[1, index]-S43_ph[1:trim_s, index]),
          linewidth=1,
-         label='DUT corrected')
+         label='DUT corrected trimmed')
+
+plt.plot(S21_ph[trim_f:, 1],
+         (S21_ph[1, index]-S21_ph[trim_f:, index])-(S43_ph[1, index]-S43_ph[trim_f:, index]),
+         linewidth=1,
+         label='DUT corrected trimmed2')
 
 
-
-plt.plot(S43_ph[1:, 1],
-         S43_ph[1, index]-S43_ph[1:, index],
+plt.plot(S43_ph[1:trim_s, 1],
+         S43_ph[1, index]-S43_ph[1:trim_s, index],
          linewidth=1,
          label='reference')
 

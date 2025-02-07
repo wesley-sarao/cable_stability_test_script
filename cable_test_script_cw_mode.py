@@ -30,7 +30,7 @@ vna_termination = "\n"
 
 # %% Metadata for the test
 metadata = {
-    "measurement_title" : "stability test 6",
+    "measurement_title" : "stability test 5",
     "cable_under_test_manufacturer": "Withwave",
     "cable_under_test_model_number": "W102-NM1SM1-2M",
     "cable_under_test_serial_number": "N/A",
@@ -42,9 +42,10 @@ metadata = {
     "cable_under_test_additional_adaptor_port_1": "SMA f-f",  # external to the calibration
     "cable_under_test_additional_adaptor_port_2": "SMA f - N-Type f",
     "test_location": "Liesbeek house Receiver Lab",
-    "temperature profile" : "25 C to +50 C at 2 degrees per 10 mins (0.20). Soak for 20 min at 50 C, ramp from 50 C to -10 C at 2 degrees in 10 mins (0.20). Soak at -10 for 20 min. Ramp back to 50C at 0.20, soak for 20 mins at 50 C and ramp back down to 25 C at 0.2",
+    "temperature profile" : "No temperature profile. Just allow both cables to soak at ambient. We want to understand the behaviour of the VNA",
     "calibration_description": '''Channel 1: Two port calibration port 1, port 2 and two port calibration port 3, port 4''',
-    "frequency reference": "External - GPS disciplined rubudium clock"
+    "frequency reference": "External - GPS disciplined rubudium clock",
+    "VNA setup" : "CW mode at 15 GHz, Enhanced wave correction enabled. 1 sweep pt"
     }
 
 
@@ -53,22 +54,18 @@ initial_file_name = 'measurements//'+metadata["cable_under_test_manufacturer"]+ 
 
 
 # %%
-measurement_list = ['S11_mag(dB)',
-                    'S21_mag(dB)',
-                    'S12_mag(dB)',
-                    'S22_mag(dB)',
-                    'S21_phase',
-                    'S33_mag(dB)',
+measurement_list = ['S21_mag(dB)',
                     'S43_mag(dB)',
-                    'S34_mag(dB)',
-                    'S44_mag(dB)',
+                    'S21_phase',
                     'S43_phase']
 
 
 # %%
-f_points = 201  # number of points in the frequency sweep
-f_start = '0.1 GHZ'
-f_stop = '20.1 GHZ'
+# f_points = 201  # number of points in the frequency sweep
+# f_start = '0.1 GHZ'
+# f_stop = '20.1 GHZ'
+
+'''Changed to single (CW) frequency mode of 15 GHz'''
 # this will give allow the points to align with GHz designations
 
 # %% Functions
@@ -156,9 +153,9 @@ def initialise_vna():
     # Channel 1 setup
     vna.write('CONF:CHAN1:STAT ON')  # Create Ch1 and enable
     vna.write('SWEep:TYPE LIN')  # Set up frequency sweep
-    vna.write('SENSE1:SWEEP:POINTS %s' % f_points)
-    vna.write('FREQ:START %s' % f_start)
-    vna.write('FREQ:STOP %s' % f_stop)
+    # vna.write('SENSE1:SWEEP:POINTS %s' % f_points)
+    # vna.write('FREQ:START %s' % f_start)
+    # vna.write('FREQ:STOP %s' % f_stop)
     vna.write('SOUR:POW -20')  # Set an appropriate power level for this cable
 
     # Channel 2 setup
@@ -361,8 +358,8 @@ try:
     # initialise the Numpy array files for storing the data
     header = np.ones((1, (len(measurement_freq)+3)))
     header[0, 0] = time.time()
-    header[0, 1] = chamber_temp  # Main chamber temperature probe
-    header[0, 2] = chamber_temp_pt100  # This is the temperature probe on the cable
+    header[0, 1] = 10#chamber_temp  # Main chamber temperature probe
+    header[0, 2] = 10#chamber_temp_pt100  # This is the temperature probe on the cable
     header[0, 3:] = measurement_freq
     # temporatory array used in formatting data
     temp = np.ones((1, (len(measurement_freq)+3)))
@@ -371,22 +368,22 @@ try:
         np.save(working_log_file +' %s.npy' % value, header)
 
     # selec the program
-    tc.write('Programme en cours = "cable_stability"')
+    # tc.write('Programme en cours = "cable_stability"') # no programme used for this test
     # confirm that the correct program is selected
     # print(tc.query("?Programme en cours"))
-    write_to_log_file(working_log_file,
-                      'Programme selected on environmental chamber:'+ tc.query("?Programme en cours"))
-    
+    # write_to_log_file(working_log_file,
+    #                   'Programme selected on environmental chamber:'+ tc.query("?Programme en cours"))
+    write_to_log_file(working_log_file,'Programme selected on environmental chamber:none')
     # Initiate the chamber
-    tc.write('marche_arret = 1')  # this should start the programme
-    time.sleep(20) # allow the program to start before interrogating
+    # tc.write('marche_arret = 1')  # this should start the programme
+    # time.sleep(20) # allow the program to start before interrogating
     # if (tc.query('?marche_arret') == ('marche_arret=1')):
     #     print('Environmental chamber turned on')
     #     write_to_log_file(working_log_file,'Environmental chamber turned on')
     # if (tc.query('?marche_arret') == ('marche_arret=0')):
     #     print('Environmental chamber turned off')
     environmental_tests_start_time = time.time()
-    stop_time = environmental_tests_start_time + (15.5*60*60)
+    stop_time = environmental_tests_start_time + (15.5*60*60) 
     # time_left = get_time_remaining()
     # if time_left == '':
     #     print('error receiving time left')
@@ -422,7 +419,7 @@ try:
         write_to_log_file(working_log_file,
                       'Measurement %s' % i)
         write_to_log_file(working_log_file,chamber_temp)
-        time.sleep(10) # 1 minute between tests will result in 7509 samples 
+        time.sleep(5) # 1 minute between tests will result in 7509 samples 
         i+=1
     # close the socket connections
     write_to_log_file(working_log_file,
